@@ -12,8 +12,18 @@ public class CategoriaService {
 	@Autowired
 	private CategoriaDAO cd;
 	
-	public void registraCategoria(String categoria) throws Exception { cd.insert( new Categoria(categoria) ); }
+	/**
+	 * Registra una nuova categiria sul database
+	 * 
+	 * @param categoria (String)			Nome della categoria
+	 */
+	public void registraCategoria(String categoria) { cd.insert( new Categoria(categoria) ); }
 	
-	public void eliminaCategoria(String categoria) throws Exception { cd.delete(categoria); }
+	/**
+	 * Elimina una categoria dal database
+	 * 
+	 * @param categoria (String)			Nome della categoria
+	 */
+	public void eliminaCategoria(String categoria) { cd.delete(categoria); }
 		
 }

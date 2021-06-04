@@ -3,8 +3,6 @@ package services;
 import java.util.List;
 import java.util.Map;
 
-import javax.management.RuntimeErrorException;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Transient;
 import org.springframework.stereotype.Service;
@@ -15,7 +13,6 @@ import dao.LibroDAO;
 import dao.MagazzinoDAO;
 import dao.MagazzinoSt;
 import dto.LibroDTO;
-import entity.Autore;
 import entity.Categoria;
 import entity.Libro;
 import entity.Magazzino;
@@ -32,6 +29,14 @@ public class LibroService {
 	@Autowired
 	private AutoreDAO ad;
 	
+	
+	/**
+	 * Registra un nuovo libro sul database
+	 * Se esiste già un libro con gli stessi dati allora viene lanciata una "RuntimeExcepption"
+	 * 
+	 * 
+	 * @param nLb (LibroDTO)		Libro da aggiungere
+	 */
 	@Transactional
 	@Transient
 	public void registraNuovoLibro(LibroDTO nLb) { 
@@ -62,17 +67,18 @@ public class LibroService {
 				&& l.getAutore() == lb.getAutore()
 					) throw new RuntimeException("Libro già presente");
 		}
-		
-		System.out.println("adde: " + lb);
-		
+				
 		ld.insert(lb); 
-		
-		System.out.println("Magazzinno: " + lb.getIsbn());
-		
 		md.insert( new Magazzino(50, MagazzinoSt.RICHIESTO.getSt(), ld.selectForIsbn(lb.getIsbn()) ) );
 		
 	}
 	
+	/**
+	 * Modifica i dati di un libro già esistente sul database
+	 * 
+	 * 
+	 * @param nLb (LibroDTO)		Dati del libro da modificare
+	 */
 	@Transactional
 	public void modificaDatiLibro(LibroDTO nLb) { 
 	
@@ -89,6 +95,11 @@ public class LibroService {
 		
 	}
 	
+	/**
+	 * Libro da eliminare dal database 
+	 * 
+	 * @param isbn (int)			Id del libro da eliminare
+	 */
 	@Transactional
 	public void eliminaLibro(int isbn) { 
 	
@@ -101,16 +112,54 @@ public class LibroService {
 		ld.delete(isbn); 
 	}
 	
+	/**
+	 * Restituisce la lista di tutti i libri di un autore conoscendo il suo id
+	 * 
+	 * @param idAutore: int 		id dell'autore
+	 * @return: List<Libro>			Lista dei libri di untore
+	 */
 	public List<Libro> selezionaLibriPerAutore (int idAutore) { return ld.selectForAuthor(idAutore); }
 	
-	@Transactional
+	/**
+	 * Restituice tutti i dati di un libro 
+	 * 
+	 * @param isbn (int)				Id del libro
+	 * @return (libro)				Dati del libro selezionato
+	 */
 	public Libro leggiDatiLibro(int isbn) { return ld.selectForIsbn(isbn); }
 	
+	/**
+	 * Restituisce i libri del database per una pagina.
+	 * I due parametri rispettivamente specificano il nunmero di libri per pagina e la pagina raggiunta.
+	 * In questo modo non viene restituita tutta la lista dei libri, ma solo una loro parte.
+	 * Questo metodo serve per visualizzare i prodotti su una pagina web. In ogni pagina c'è una parte dei libri.
+	 * 
+	 * 
+	 * @param offset (int)			Numero di libri per pagina. Inizia da zero
+	 * @param page (nt)				Numero di pagina raggiunta
+	 * @return (List<Libro>) 		Lista dei libri
+	 */
 	public List<Libro> selezioneTuttiLibri(int offset, int page) { return ld.selectAllPage(offset, page-1); }
 	
-	public Map<String, Integer> statistichePerNazione() { System.out.println("enter"); return ld.selectNBooksForCountry(); }
+	/**
+	 * Restituisce una lista di tuple. 
+	 * Il primo valore della tupla specifica una nazione, mentre la seconda il numero di libri il cui autore è nato in quella nazione
+	 * 
+	 * 
+	 * @return (Map<String, Integer>)	Mappa paese, numero libri
+	 */
+	public Map<String, Integer> statistichePerNazione() { return ld.selectNBooksForCountry(); }
 	
-	
+	/**
+	 * Richiede che un libro riceva un approvigionamento.
+	 * Se esiste una richiesta in corso ( stato = richiesto ), se necessario richiede la quantità di copie richieste per arrivare al numero desiderato
+	 * Se esiste una richiesta in corso ( stato = processato ), non sarà possibile fare ulteriori richieste di approvigionamento.
+	 * Se esiste già una richiesta in corso  ( stato = disponibile ), non sarà possibile modificare la richiesta in corso, ma sarà possibile fare una nuova richeista di approvigionamento della quantità residura
+	 * 
+	 * 
+	 * @param isbn (int)	Id del libro
+	 * @param nCopie (int)	 Numero di copie del libro da ordinare
+	 */
 	@Transactional
 	public void approvigionaLibro(int isbn, int nCopie) {
 		List<Magazzino> lst = md.richiesteLibro(isbn);
@@ -122,7 +171,6 @@ public class LibroService {
 				
 				
 				if (mgz.getStatoStock().toString().equals( MagazzinoSt.RICHIESTO.getSt()) ) {
-					System.out.println("(mgz.getQuantità() < nCopie): " + (mgz.getQuantità() < nCopie) );
 					
 					if (mgz.getQuantità() < nCopie) {
 						mgz.setQuantità(nCopie);
@@ -145,22 +193,30 @@ public class LibroService {
 		}
 		
 		
-		// se devo crearne una nuova
-//		if (addAp)
-//			md.insert( new Magazzino(nCopie, MagazzinoSt.RICHIESTO.getSt(), this.leggiDatiLibro(isbn) ) );
+		if (addAp)
+			md.insert( new Magazzino(nCopie, MagazzinoSt.RICHIESTO.getSt(), this.leggiDatiLibro(isbn) ) );
 		
 	}
 	
+	/**
+	 * Cambia lo stato di un approvigionamento
+	 * Il cambio di stato può avvenire solo da "richiesto" a "processato" oppure da "processato" a "disponibile"
+	 * 
+	 * Se una transazione cambia stato e in quello stato esiste un approvigiomanto per lo stesso libro queste sono accorpate
+	 * 
+	 * @param isbn (int)			Id del libro
+	 * @param stato (String)		Nuovo stato del libro
+	 */
 	@Transactional
 	public void cambiaStatoRichiesta(int isbn, String stato) {
 		List<Magazzino> lst = md.richiesteLibro(isbn);
 		
 		for (Magazzino mgz : lst) {
-			if (mgz.getStatoStock().toString().equals( MagazzinoSt.RICHIESTO.getSt() ) && stato.equals( MagazzinoSt.RICHIESTO.getSt() ) ) {
+			if (mgz.getStatoStock().toString().equals( MagazzinoSt.RICHIESTO.getSt() ) && stato.equals( MagazzinoSt.PROCESSATO.getSt() ) ) {
 				mgz.setStatoStock(MagazzinoSt.PROCESSATO.getSt() );
 				md.update(mgz);
 				break;
-			} else if ( mgz.getStatoStock().toString().equals( MagazzinoSt.PROCESSATO.getSt() ) && stato.equals( MagazzinoSt.PROCESSATO.getSt() ) ) {
+			} else if ( mgz.getStatoStock().toString().equals( MagazzinoSt.PROCESSATO.getSt() ) && stato.equals( MagazzinoSt.DISPONIBILE.getSt() ) ) {
 				mgz.setStatoStock( MagazzinoSt.DISPONIBILE.getSt() );
 				md.update(mgz);
 				break;
@@ -185,10 +241,20 @@ public class LibroService {
 		});
 	}
 	
-	
+	/**
+	 * Restituisce una lista di tutti gli approvigionamenti di un libro
+	 * 
+	 * @param isbn (int) 			id del libro
+	 * @return (list<Magazzino>) 	Lista di tutti gli approvigionamenti
+	 */
 	public List<Magazzino> leggiInfoStock(int isbn) { return md.richiesteLibro(isbn); }
 	
 	
+	/**
+	 * Elinima tutte le richieste di approvigionamento di un libro
+	 * 
+	 * @param isbn (int) 			id del libro
+	 */
 	@Transactional
 	public void chiudiRichiesta(int isbn) {
 		List<Magazzino> lst = md.richiesteLibro(isbn);

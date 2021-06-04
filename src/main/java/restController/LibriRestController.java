@@ -90,9 +90,10 @@ public class LibriRestController {
 	@PutMapping(path = "/{isbn}", consumes = {"application/xml", "application/json"} )
 	public ResponseEntity<Object> modificaLibro(@PathVariable int isbn, @RequestBody LibroDTO l) {
 		
-		l.setIsbn(isbn);
 		
 		try {
+			l.setIsbn(isbn);
+			
 			ls.modificaDatiLibro(l);
 			return new ResponseEntity<Object>(HttpStatus.OK);
 			

@@ -14,8 +14,8 @@ public class CategoriaDAO {
 	private EntityManager em;
 		
 	
-	public void insert(Categoria ct) throws Exception { em.persist(ct); }
+	public void insert(Categoria ct) { em.persist(ct); }
 	
-	public void delete(String ct) throws Exception { em.remove(ct); }
+	public void delete(String ct) { em.remove(ct); }
 	
 }
