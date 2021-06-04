@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<meta charset="ISO-8859-1">
+		<title>index Page</title>
+		<style type="text/css">
+			input {
+				width: 150px;
+				margin: 2px;
+			}
+			div {
+				margin: 0 50px 20px 30px;
+			}
+		</style>
+	</head>
+	<body>
+		<div>
+			<h1> Registra nuovo autore : </h1>
+			
+			<form action="Libreria/authors/reg" method="put">
+				<input type="text" name="nome"> <label> NOME </label> <br>
+				<input type="text" name="cognome"> <label> COGNOME </label> <br>
+				<input type="text" name="NazioneResidenza"> <label> Nazione nascita </label> <br> 
+				<input type="submit" value="Registra"> <br>
+			</form>
+		</div>
+		
+		<div>
+			<h1> Registra nuovo libro </h1>
+	
+			<form action="Libreria/books/reg" method="post">
+				<input type="text" name="titolo"> Titolo <br>
+				<input type="text" name="descrizione"> Descrizione <br>
+				<input type="text" name="categoria"> Categoria <br>
+				<input type="text" name="prezzo"> Prezzo <br> 
+				<input type="text" name="nCopie"> nCopie <br>
+				<input type="text" name="Autore.id"> idAutore <br>
+				<input type="submit" value="Registra"> <br>
+			</form>
+
+		</div> 
+	</body>
+</html>
